@@ -170,9 +170,11 @@ export function initControls({ engine, clock, settings, toggleTheme }: ControlsD
     input.addEventListener('change', () => {
       settings.options[key] = input.checked;
       engine.options[key] = input.checked;
+      if (key === 'contratiempo') clock.setOffbeats(input.checked);
       save();
     });
   }
+  clock.setOffbeats(settings.options.contratiempo);
 
   /* ---------- Tempo-Trainer ---------- */
 

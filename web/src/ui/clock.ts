@@ -3,7 +3,7 @@
  * Die 12 steht oben, die Zählzeiten laufen im Uhrzeigersinn.
  * Der Zeiger springt von Zählzeit zu Zählzeit.
  */
-import { BEATS, beatAngle, beatGroups, beatSequence, isAccent } from '../core/compas';
+import { BEATS, beatAngle, beatGroups, beatSequence, isAccent, isOffbeat } from '../core/compas';
 import { findPalo, type Palo } from '../core/palos';
 import type { CompasPosition } from '../core/timeline';
 
@@ -48,7 +48,10 @@ export class ClockView {
   private progress!: SVGPathElement;
   private centerNum!: SVGTextElement;
   private centerLabel!: SVGTextElement;
+  private andDots: Record<number, SVGCircleElement> = {};
   private activeBeat: number | null = null;
+  private activeAnd: number | null = null;
+  private offbeats = false;
   private lastNum: number | null = null;
   private lastLabel: string | null = null;
 
@@ -57,11 +60,19 @@ export class ClockView {
     private readonly strip: HTMLElement,
   ) {}
 
+  /** Zeigt das „und“ zwischen den Zählzeiten an (Contratiempo). */
+  setOffbeats(enabled: boolean): void {
+    this.offbeats = enabled;
+    this.svg.classList.toggle('contra', enabled);
+    this.strip.classList.toggle('contra', enabled);
+  }
+
   build(palo: Palo): void {
     // Fokus merken, damit er nach dem Neuaufbau (z. B. Akzent per Tastatur umgeschaltet) erhalten bleibt.
     const focusedBeat = Object.entries(this.markers).find(([, g]) => g === document.activeElement)?.[0];
     this.palo = palo;
     this.activeBeat = null;
+    this.activeAnd = null;
     this.lastNum = null;
     this.lastLabel = null;
     this.svg.textContent = '';
@@ -109,6 +120,13 @@ export class ClockView {
         if (e.key === 'Enter') this.onBeatClick?.(b);
       });
       this.markers[b] = g;
+    }
+
+    // „Und“-Punkte zwischen den Zählzeiten (nur bei Contratiempo sichtbar)
+    this.andDots = {};
+    for (let b = 1; b <= BEATS; b++) {
+      const [x, y] = polar(R_MARK, beatAngle(b) + 360 / BEATS / 2);
+      this.andDots[b] = el('circle', { class: 'and', cx: x.toFixed(2), cy: y.toFixed(2), r: 2.5 }, svg);
     }
 
     // Zeiger
@@ -166,6 +184,21 @@ export class ClockView {
         this.cells[beat].classList.add('active');
       }
       this.activeBeat = beat;
+    }
+
+    // „Und“: zweite Hälfte der Zählzeit, nur bei Contratiempo und nicht im Vorzähler
+    const step = pos ? Math.floor(pos.stepFloat) : 0;
+    const and = this.offbeats && pos && !pos.countIn && isOffbeat(step) ? pos.beat : null;
+    if (and !== this.activeAnd) {
+      if (this.activeAnd !== null) {
+        this.andDots[this.activeAnd].classList.remove('active');
+        this.cells[this.activeAnd].classList.remove('and');
+      }
+      if (and !== null) {
+        this.andDots[and].classList.add('active');
+        this.cells[and].classList.add('and');
+      }
+      this.activeAnd = and;
     }
 
     if (shown !== this.lastNum) {

@@ -120,6 +120,11 @@ body {
 #clock .beat.accent.active circle { fill: var(--accent); stroke: var(--accent); }
 #clock .beat.accent.active { transform: scale(1.4); }
 
+/* „Und“ bei Contratiempo: dezente Punkte zwischen den Zählzeiten */
+#clock .and { fill: var(--muted); opacity: 0; transform-box: fill-box; transform-origin: center; transition: opacity 80ms, transform 80ms; }
+#clock.contra .and { opacity: 0.2; }
+#clock.contra .and.active { fill: var(--ink); opacity: 1; transform: scale(1.6); }
+
 #clock .hand line { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
 #clock .hand circle { fill: var(--accent); }
 
@@ -144,7 +149,21 @@ body {
   font-variant-numeric: tabular-nums;
   transition: background 80ms, color 80ms;
 }
-.strip .cell { cursor: pointer; user-select: none; }
+.strip .cell { cursor: pointer; user-select: none; position: relative; }
+.strip .cell::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0;
+  transition: opacity 80ms;
+}
+.strip.contra .cell.and::after { background: var(--ink); opacity: 1; }
 .strip .cell:hover { outline: 2px solid var(--line); }
 .strip .cell.group-start { margin-left: 6px; }
 .strip .cell:first-child { margin-left: 0; }

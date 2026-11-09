@@ -1,0 +1,16 @@
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Audio und Analyse-Ergebnisse: urheberrechtlich geschützt, nicht veröffentlichen
+tracks/
+
+# Editor / System
+.DS_Store
+Thumbs.db

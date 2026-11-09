@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Compás Trainer</title>
-  <link rel="stylesheet" href="styles.css">
   <script>
     // Gespeichertes Farbschema vor dem ersten Rendern setzen (kein Aufblitzen).
     try {
@@ -62,7 +61,7 @@
       <button type="button" id="play" class="play">▶ Start</button>
 
       <label class="volume">
-        <span aria-hidden="true">🔈</span>
+        <span id="master-icon" aria-hidden="true">🔈</span>
         <input type="range" id="master" min="0" max="2" step="0.01" aria-label="Lautstärke (bis 200 %)">
         <output id="master-value">90 %</output>
       </label>
@@ -104,10 +103,6 @@
     </section>
   </main>
 
-  <script src="src/palos.js"></script>
-  <script src="src/sounds.js"></script>
-  <script src="src/engine.js"></script>
-  <script src="src/clock.js"></script>
-  <script src="src/app.js"></script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

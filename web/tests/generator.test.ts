@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generatorHits, type GeneratorOptions } from '../src/audio/sources/generator';
 import { beatToStep } from '../src/core/compas';
-import { findPalo } from '../src/core/palos';
+import { findPalo, toggleAccent } from '../src/core/palos';
 
 const solea = findPalo('solea');
 const plain: GeneratorOptions = { contratiempo: false, click: false };
@@ -32,8 +32,29 @@ describe('Compás-Generator', () => {
 
   it('spielt das Cajón-Pattern des Palo', () => {
     expect(instruments(3)).toContain('bajo');
-    expect(instruments(6)).toContain('slap');
-    expect(instruments(1)).not.toContain('bajo');
+    expect(instruments(10)).toContain('bajo');
+    for (const b of [6, 8, 12]) expect(instruments(b)).toContain('slap');
+    for (const b of [1, 2, 4, 5, 7, 9, 11]) {
+      expect(instruments(b)).not.toContain('bajo');
+      expect(instruments(b)).not.toContain('slap');
+    }
+  });
+
+  it('nimmt einer entfernten Betonung auch das Cajón weg', () => {
+    const ohne6 = toggleAccent(solea, 6);
+    const hits = generatorHits(ohne6, beatToStep(6), false, plain).map((h) => h.instrument);
+    expect(hits).toEqual(['sorda']);
+  });
+
+  it('gibt einer hinzugefügten Betonung Palmas claras und Cajón', () => {
+    const mit5 = toggleAccent(solea, 5);
+    const hits = generatorHits(mit5, beatToStep(5), false, plain).map((h) => h.instrument);
+    expect(hits).toEqual(['clara', 'slap']);
+  });
+
+  it('behält den Bass, wenn eine Bass-Zählzeit wieder betont wird', () => {
+    const wieder3 = toggleAccent(toggleAccent(solea, 3), 3);
+    expect(generatorHits(wieder3, beatToStep(3), false, plain).map((h) => h.instrument)).toContain('bajo');
   });
 
   it('klickt nur mit eingeschaltetem Metronom', () => {

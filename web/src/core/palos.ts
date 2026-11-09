@@ -20,9 +20,12 @@ export interface Palo {
   bpm: number;
   min: number;
   max: number;
-  /** Cajón-Pattern: Bass bzw. Slap auf diesen Zählzeiten. */
+  /**
+   * Cajón: Jeder betonte Schlag bekommt einen Cajón-Schlag – auf diesen
+   * Zählzeiten einen Bass, auf allen anderen Akzenten einen Slap.
+   * Unbetonte Schläge bleiben ohne Cajón, damit angepasste Akzente hörbar sind.
+   */
   bajo: readonly number[];
-  slap: readonly number[];
   info: string;
 }
 
@@ -39,7 +42,6 @@ export const PALOS: readonly Palo[] = [
     min: 50,
     max: 200,
     bajo: [3, 10],
-    slap: [6, 8, 12],
     info: 'Getragen und schwer. Gruppierung 3+3+2+2+2, Akzente auf 3 · 6 · 8 · 10 · 12.',
   },
   {
@@ -52,7 +54,6 @@ export const PALOS: readonly Palo[] = [
     min: 80,
     max: 260,
     bajo: [3, 10],
-    slap: [6, 8, 12],
     info: 'Gleicher Compás wie die Soleá, aber hell und deutlich schneller.',
   },
   {
@@ -65,7 +66,6 @@ export const PALOS: readonly Palo[] = [
     min: 80,
     max: 240,
     bajo: [3, 10],
-    slap: [6, 8, 12],
     info: 'Mittleres Tempo, gezählt ab der 12. Akzente auf 12 · 3 · 6 · 8 · 10.',
   },
   {
@@ -78,7 +78,6 @@ export const PALOS: readonly Palo[] = [
     min: 120,
     max: 320,
     bajo: [3, 10],
-    slap: [6, 8, 12],
     info: 'Schnell, gezählt ab der 12. Tipp: Contratiempo einschalten.',
   },
   {
@@ -91,7 +90,6 @@ export const PALOS: readonly Palo[] = [
     min: 60,
     max: 200,
     bajo: [3, 10],
-    slap: [6, 8, 12],
     info: 'Amalgam aus 6/8 und 3/4, gezählt ab der 12. Akzente auf 12 · 3 · 6 · 8 · 10.',
   },
   {
@@ -104,11 +102,25 @@ export const PALOS: readonly Palo[] = [
     min: 70,
     max: 240,
     bajo: [12, 7],
-    slap: [2, 4, 10],
     info: 'Gruppierung 2+2+3+3+2 ab der 12. Akzente auf 12 · 2 · 4 · 7 · 10.',
   },
 ];
 
+/** Liefert den Palo mit seinen Standard-Akzenten (unbekannte ID → erster Palo). */
 export function findPalo(id: string | undefined): Palo {
   return PALOS.find((p) => p.id === id) ?? PALOS[0];
+}
+
+/** Neue Palo-Variante, in der `beat` zwischen betont und unbetont umgeschaltet ist. */
+export function toggleAccent(palo: Palo, beat: number): Palo {
+  const accents = palo.accents.includes(beat)
+    ? palo.accents.filter((b) => b !== beat)
+    : [...palo.accents, beat];
+  return { ...palo, accents: accents.sort((a, b) => a - b) };
+}
+
+/** true, wenn die Akzente denen des Standard-Palo entsprechen. */
+export function hasDefaultAccents(palo: Palo): boolean {
+  const defaults = findPalo(palo.id).accents;
+  return defaults.length === palo.accents.length && defaults.every((b) => palo.accents.includes(b));
 }

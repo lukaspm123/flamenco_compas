@@ -41,9 +41,13 @@ export function generatorHits(palo: Palo, step: number, countIn: boolean, option
   }
 
   if (options.click) hits.push({ instrument: 'click', bus: 'click', velocity: accent ? 1 : 0.6, accent });
-  if (accent) hits.push({ instrument: 'clara', bus: 'claras', velocity: 1 });
-  else if (!options.contratiempo) hits.push({ instrument: 'sorda', bus: 'sordas', velocity: 0.8 });
-  if (palo.bajo.includes(beat)) hits.push({ instrument: 'bajo', bus: 'cajon', velocity: 1 });
-  if (palo.slap.includes(beat)) hits.push({ instrument: 'slap', bus: 'cajon', velocity: accent ? 1 : 0.7 });
+  if (accent) {
+    hits.push({ instrument: 'clara', bus: 'claras', velocity: 1 });
+    // Cajón folgt den Akzenten: Bass auf den Bass-Zählzeiten des Palo, sonst Slap.
+    const cajon = palo.bajo.includes(beat) ? 'bajo' : 'slap';
+    hits.push({ instrument: cajon, bus: 'cajon', velocity: 1 });
+  } else if (!options.contratiempo) {
+    hits.push({ instrument: 'sorda', bus: 'sordas', velocity: 0.8 });
+  }
   return hits;
 }

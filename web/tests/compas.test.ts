@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { beatAngle, beatGroups, beatSequence, beatToStep, isOffbeat, stepToBeat, STEPS } from '../src/core/compas';
-import { PALOS, findPalo } from '../src/core/palos';
+import { PALOS, findPalo, hasDefaultAccents, toggleAccent } from '../src/core/palos';
 
 describe('Schritte und Zählzeiten', () => {
   it('bildet Zählzeiten auf Schritte ab und zurück', () => {
@@ -73,5 +73,39 @@ describe('Palo-Daten', () => {
 
   it('unbekannte ID fällt auf den ersten Palo zurück', () => {
     expect(findPalo('gibtsnicht')).toBe(PALOS[0]);
+  });
+});
+
+describe('Akzente anpassen', () => {
+  const solea = findPalo('solea');
+
+  it('fügt einen Akzent hinzu und entfernt ihn wieder', () => {
+    const plus1 = toggleAccent(solea, 1);
+    expect(plus1.accents).toEqual([1, 3, 6, 8, 10, 12]);
+    expect(toggleAccent(plus1, 1).accents).toEqual([3, 6, 8, 10, 12]);
+  });
+
+  it('verändert den Standard-Palo nicht', () => {
+    toggleAccent(solea, 3);
+    expect(findPalo('solea').accents).toEqual([3, 6, 8, 10, 12]);
+  });
+
+  it('erkennt Abweichungen vom Standard', () => {
+    expect(hasDefaultAccents(solea)).toBe(true);
+    expect(hasDefaultAccents(toggleAccent(solea, 5))).toBe(false);
+    expect(hasDefaultAccents(toggleAccent(toggleAccent(solea, 5), 5))).toBe(true);
+  });
+
+  it('Gruppierung folgt den angepassten Akzenten', () => {
+    const custom = toggleAccent(toggleAccent(solea, 8), 4); // Akzente 3, 4, 6, 10, 12
+    expect(beatGroups(custom)).toEqual([[1, 2, 3], [4], [5, 6], [7, 8, 9, 10], [11, 12]]);
+  });
+
+  it('kommt auch ganz ohne Akzente zurecht', () => {
+    let none = solea;
+    for (const b of solea.accents) none = toggleAccent(none, b);
+    expect(none.accents).toEqual([]);
+    expect(beatGroups(none).flat()).toHaveLength(12);
+    expect(beatGroups({ ...findPalo('seguiriya'), accents: [] }).flat()).toHaveLength(12);
   });
 });

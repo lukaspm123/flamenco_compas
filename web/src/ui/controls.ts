@@ -1,6 +1,6 @@
 /* Bedienelemente: Palo, Tempo, Start/Stop, Optionen, Mixer, Trainer, Tastatur. */
 import { VOLUME_BUSES, type Engine, type VolumeBus } from '../audio/engine';
-import { PALOS, findPalo, type Palo } from '../core/palos';
+import { PALOS, findPalo, hasDefaultAccents, toggleAccent, type Palo } from '../core/palos';
 import { TapTempo } from '../core/tapTempo';
 import { saveSettings, type Settings } from '../state/settings';
 import type { ClockView } from './clock';
@@ -24,6 +24,7 @@ export interface ControlsDeps {
 
 export function initControls({ engine, clock, settings, toggleTheme }: ControlsDeps): void {
   const save = () => saveSettings(settings);
+  /** Aktiver Palo – ggf. mit vom Nutzer angepassten Akzenten. */
   let palo: Palo = findPalo(settings.paloId);
 
   // Engine mit gespeicherten Einstellungen füttern (Trainer-Objekt wird geteilt).
@@ -47,6 +48,7 @@ export function initControls({ engine, clock, settings, toggleTheme }: ControlsD
   const bpmSlider = $<HTMLInputElement>('#bpm');
 
   function selectPalo(id: string): void {
+    // findPalo liefert immer die Standard-Akzente: eigene Anpassungen werden verworfen.
     palo = findPalo(id);
     settings.paloId = palo.id;
     engine.setPalo(palo);
@@ -58,9 +60,29 @@ export function initControls({ engine, clock, settings, toggleTheme }: ControlsD
     bpmSlider.max = String(palo.max);
     setBpm(settings.bpmByPalo[palo.id] ?? palo.bpm);
     clock.build(palo);
+    updateAccentUi();
     if (engine.playing) engine.start(); // neu ansetzen, damit der Compás auf palo.start beginnt
     save();
   }
+
+  /* ---------- Akzente anpassen ---------- */
+
+  const accentReset = $<HTMLButtonElement>('#accent-reset');
+
+  /** Übernimmt geänderte Akzente sofort – auch während der Wiedergabe, ohne Neustart. */
+  function applyAccents(next: Palo): void {
+    palo = next;
+    engine.setPalo(palo);
+    clock.build(palo);
+    updateAccentUi();
+  }
+
+  function updateAccentUi(): void {
+    accentReset.hidden = hasDefaultAccents(palo);
+  }
+
+  clock.onBeatClick = (beat) => applyAccents(toggleAccent(palo, beat));
+  accentReset.addEventListener('click', () => applyAccents(findPalo(palo.id)));
 
   /* ---------- Tempo ---------- */
 

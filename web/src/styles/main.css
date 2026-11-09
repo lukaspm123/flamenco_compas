@@ -100,10 +100,14 @@ body {
 #clock .progress { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
 #clock.counting .face { stroke: var(--gold); stroke-dasharray: 4 4; }
 
-#clock .group { fill: none; stroke: var(--gold); stroke-width: 3; stroke-linecap: round; opacity: 0.55; }
-#clock .group.alt { opacity: 0.3; }
+/* Gruppenbögen: 3er-Gruppen kräftig, 2er-Gruppen blass */
+#clock .group { fill: none; stroke: var(--gold); stroke-linecap: round; }
+#clock .group.ternary { stroke-width: 4; opacity: 0.7; }
+#clock .group.binary { stroke-width: 3; opacity: 0.3; }
 
-#clock .beat { transition: transform 90ms ease-out; }
+#clock .beat { transition: transform 90ms ease-out; cursor: pointer; outline: none; }
+#clock .beat:hover circle { stroke-width: 3; }
+#clock .beat:focus-visible circle { stroke: var(--gold); stroke-width: 3; }
 #clock .beat circle { fill: var(--face); stroke: var(--muted); stroke-width: 1.5; transition: fill 80ms, stroke 80ms; }
 #clock .beat text { fill: var(--muted); font-size: 11px; font-weight: 600; }
 #clock .beat.accent circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
@@ -140,11 +144,24 @@ body {
   font-variant-numeric: tabular-nums;
   transition: background 80ms, color 80ms;
 }
+.strip .cell { cursor: pointer; user-select: none; }
+.strip .cell:hover { outline: 2px solid var(--line); }
 .strip .cell.group-start { margin-left: 6px; }
 .strip .cell:first-child { margin-left: 0; }
 .strip .cell.accent { color: var(--accent); background: var(--accent-soft); font-weight: 800; }
 .strip .cell.active { background: var(--ink); color: var(--face); }
 .strip .cell.accent.active { background: var(--accent); color: #fff; }
+
+.accent-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  min-height: 38px;
+}
+.accent-bar .info { margin: 0; font-size: 0.85rem; }
+.accent-bar button { white-space: nowrap; flex-shrink: 0; }
 
 /* ---------- Steuerung ---------- */
 

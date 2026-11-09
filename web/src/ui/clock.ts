@@ -4,7 +4,7 @@
  * Der Zeiger springt von Zählzeit zu Zählzeit.
  */
 import { BEATS, beatAngle, beatGroups, beatSequence, isAccent } from '../core/compas';
-import type { Palo } from '../core/palos';
+import { findPalo, type Palo } from '../core/palos';
 import type { CompasPosition } from '../core/timeline';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -38,6 +38,9 @@ function arc(r: number, a0: number, a1: number): string {
 }
 
 export class ClockView {
+  /** Wird aufgerufen, wenn eine Zählzeit angeklickt wird (Akzent umschalten). */
+  onBeatClick: ((beat: number) => void) | null = null;
+
   private palo: Palo | null = null;
   private markers: Record<number, SVGGElement> = {};
   private cells: Record<number, HTMLDivElement> = {};
@@ -55,6 +58,8 @@ export class ClockView {
   ) {}
 
   build(palo: Palo): void {
+    // Fokus merken, damit er nach dem Neuaufbau (z. B. Akzent per Tastatur umgeschaltet) erhalten bleibt.
+    const focusedBeat = Object.entries(this.markers).find(([, g]) => g === document.activeElement)?.[0];
     this.palo = palo;
     this.activeBeat = null;
     this.lastNum = null;
@@ -67,14 +72,18 @@ export class ClockView {
     el('circle', { r: R_PROGRESS, class: 'progress-track' }, svg);
     this.progress = el('path', { class: 'progress', d: '' }, svg);
 
-    // Gruppenbögen (z. B. 3+3+2+2+2)
+    // Gruppenbögen (z. B. 3+3+2+2+2): immer die Standard-Gruppierung des Palo,
+    // unabhängig von angepassten Akzenten. 3er-Gruppen kräftig, 2er-Gruppen blass –
+    // so wird z. B. bei der Soleá der Wechsel von 6/8 (3+3) zu 3/4 (2+2+2) sichtbar.
     const groupStarts = new Set<number>();
-    beatGroups(palo).forEach((g, idx) => {
+    for (const g of beatGroups(findPalo(palo.id))) {
       groupStarts.add(g[0]);
-      const a0 = beatAngle(g[0]) - 11;
-      const a1 = a0 + 22 + (g.length - 1) * (360 / BEATS);
-      el('path', { class: 'group' + (idx % 2 ? ' alt' : ''), d: arc(R_GROUP, a0, a1) }, svg);
-    });
+      // Bogen reicht ±8° über die erste/letzte Zählzeit hinaus → 14° Lücke zwischen Gruppen.
+      const a0 = beatAngle(g[0]) - 8;
+      const a1 = a0 + 16 + (g.length - 1) * (360 / BEATS);
+      const kind = g.length >= 3 ? 'ternary' : 'binary';
+      el('path', { class: `group ${kind}`, d: arc(R_GROUP, a0, a1) }, svg);
+    }
 
     // Zählzeiten
     this.markers = {};
@@ -82,10 +91,23 @@ export class ClockView {
       const [x, y] = polar(R_MARK, beatAngle(b));
       const accent = isAccent(palo, b);
       const pos = el('g', { transform: `translate(${x.toFixed(2)} ${y.toFixed(2)})` }, svg);
-      const g = el('g', { class: 'beat' + (accent ? ' accent' : '') + (b === palo.start ? ' start' : '') }, pos);
+      const g = el(
+        'g',
+        {
+          class: 'beat' + (accent ? ' accent' : '') + (b === palo.start ? ' start' : ''),
+          role: 'button',
+          tabindex: 0,
+          'aria-label': `Zählzeit ${b}, ${accent ? 'betont' : 'unbetont'}. Klicken zum Umschalten.`,
+        },
+        pos,
+      );
       el('circle', { r: accent ? 15 : 11 }, g);
       const t = el('text', { 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g);
       t.textContent = String(b);
+      g.addEventListener('click', () => this.onBeatClick?.(b));
+      g.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.onBeatClick?.(b);
+      });
       this.markers[b] = g;
     }
 
@@ -105,10 +127,13 @@ export class ClockView {
       const cell = document.createElement('div');
       cell.className = 'cell' + (isAccent(palo, b) ? ' accent' : '') + (groupStarts.has(b) ? ' group-start' : '');
       cell.textContent = String(b);
+      cell.title = 'Klicken: betont / unbetont';
+      cell.addEventListener('click', () => this.onBeatClick?.(b));
       this.strip.appendChild(cell);
       this.cells[b] = cell;
     }
 
+    if (focusedBeat) this.markers[Number(focusedBeat)].focus();
     this.update(null);
   }
 

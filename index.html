@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compás Trainer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Gespeichertes Farbschema vor dem ersten Rendern setzen (kein Aufblitzen).
+    try {
+      var t = (JSON.parse(localStorage.getItem('compas-settings-v1')) || {}).theme;
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Compás <span>Trainer</span></h1>
+      <p class="hint">Leertaste: Start/Stop · ↑/↓: ±5 BPM · ←/→: ±1 BPM · T: Tap-Tempo · D: Tag/Nacht</p>
+    </div>
+    <button type="button" id="theme-toggle" class="theme-toggle"></button>
+  </header>
+
+  <main class="layout">
+    <section class="card clock-card">
+      <svg id="clock" viewBox="-120 -120 240 240" role="img" aria-label="Compás-Uhr"></svg>
+      <div id="strip" class="strip" aria-hidden="true"></div>
+    </section>
+
+    <section class="card controls">
+      <div class="block">
+        <h2>Palo</h2>
+        <div id="palos" class="palos" role="group" aria-label="Palo auswählen"></div>
+        <p id="palo-info" class="info"></p>
+      </div>
+
+      <div class="block">
+        <h2>Tempo</h2>
+        <div class="tempo">
+          <button type="button" class="round" id="bpm-down" aria-label="Langsamer">−</button>
+          <div class="bpm-display"><output id="bpm-value">110</output><small>BPM</small></div>
+          <button type="button" class="round" id="bpm-up" aria-label="Schneller">+</button>
+          <button type="button" id="tap" class="ghost">Tap</button>
+          <button type="button" class="info-btn" data-dialog="tap-info" aria-label="Was macht Tap?">i</button>
+        </div>
+        <dialog id="tap-info" class="info-dialog" aria-labelledby="tap-info-title">
+          <h3 id="tap-info-title">Tap-Tempo</h3>
+          <p>Stellt das Tempo ein, indem du es klopfst, statt eine Zahl einzugeben.</p>
+          <ol>
+            <li>Tippe mehrmals im gewünschten Tempo auf <strong>Tap</strong> oder drücke die Taste <kbd>T</kbd>. Jeder Tipp ist eine Zählzeit.</li>
+            <li>Ab dem zweiten Tipp werden die BPM berechnet und sofort übernommen.</li>
+            <li>Gemittelt wird über die letzten bis zu 6 Tipps: Je öfter du tippst, desto genauer.</li>
+            <li>Nach mehr als 2 Sekunden Pause beginnt die Messung von vorn.</li>
+          </ol>
+          <p class="info">Praktisch, um das Tempo einer Aufnahme mitzuklopfen. Funktioniert auch während der Wiedergabe. Der Wert wird auf den Tempobereich des Palo begrenzt.</p>
+          <form method="dialog"><button class="close">Verstanden</button></form>
+        </dialog>
+        <input type="range" id="bpm" min="50" max="200" value="110" aria-label="Tempo in BPM">
+      </div>
+
+      <button type="button" id="play" class="play">▶ Start</button>
+
+      <label class="volume">
+        <span aria-hidden="true">🔈</span>
+        <input type="range" id="master" min="0" max="2" step="0.01" aria-label="Lautstärke (bis 200 %)">
+        <output id="master-value">90 %</output>
+      </label>
+
+      <div class="block toggles">
+        <label><input type="checkbox" data-option="countIn"> Vorzähler (1 Compás Klick)</label>
+        <label><input type="checkbox" data-option="contratiempo"> Contratiempo (Sordas auf dem Offbeat)</label>
+        <label><input type="checkbox" data-option="click"> Metronom-Klick</label>
+      </div>
+
+      <div class="block">
+        <h2>Mixer</h2>
+        <div class="mixer">
+          <label>Palmas claras <input type="range" min="0" max="1" step="0.01" data-bus="claras"></label>
+          <label>Palmas sordas <input type="range" min="0" max="1" step="0.01" data-bus="sordas"></label>
+          <label>Cajón <input type="range" min="0" max="1" step="0.01" data-bus="cajon"></label>
+          <label>Klick <input type="range" min="0" max="1" step="0.01" data-bus="click"></label>
+        </div>
+      </div>
+
+      <details class="block">
+        <summary>Tempo-Trainer</summary>
+        <label class="row"><input type="checkbox" id="trainer-enabled"> Tempo automatisch steigern</label>
+        <div class="trainer">
+          <label>+ <input type="number" id="trainer-increment" min="1" max="20"> BPM</label>
+          <label>alle <input type="number" id="trainer-every" min="1" max="32"> Compases</label>
+          <label>bis <input type="number" id="trainer-target" min="30" max="400"> BPM</label>
+        </div>
+      </details>
+
+      <details class="block">
+        <summary>Feinabstimmung</summary>
+        <label class="row">Visueller Versatz
+          <input type="range" id="offset" min="-100" max="400" step="5">
+          <output id="offset-value">0 ms</output>
+        </label>
+        <p class="info">Erhöhen, wenn die Uhr dem Klang vorauseilt (z. B. bei Bluetooth-Kopfhörern).</p>
+      </details>
+    </section>
+  </main>
+
+  <script src="src/palos.js"></script>
+  <script src="src/sounds.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/clock.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
